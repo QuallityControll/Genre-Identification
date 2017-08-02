@@ -1,7 +1,8 @@
 import numpy
-from scipy.fftpack import fft, dct
+import scipy.fftpack
 import librosa
 from microphone import record_audio
+import math
 
 fs = 44100
 
@@ -58,3 +59,21 @@ def fft(song_arr):
 	"""
 
 	return np.fft.rfft(song_arr)
+
+def mel_scale(fft_arr):
+	"""
+	This scales the frequencies from hertz into mels.
+
+	:param
+		fft_arr[np.array]:
+			This is the array of coefficients of an fft. (Check this).
+
+	:return:
+		mels[np.array]:
+			This is an array that transformed the fft from Hertz into Mels. 
+
+	"""
+	return 2595*math.log(1 + fft_arr/700, base=10)
+
+def dct(mel_arr):
+	return scipy.fftpack.dct(mel_arr)
