@@ -73,7 +73,7 @@ def mel_scale(fft_arr):
 			This is an array that transformed the fft from Hertz into Mels. 
 
 	"""
-	return 2595*math.log(1 + fft_arr/700, base=10)
+	return 2595*np.log10(1 + fft_arr/700)
 
 def dct(mel_arr):
 	return scipy.fftpack.dct(mel_arr)
