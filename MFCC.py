@@ -76,4 +76,4 @@ def mel_scale(fft_arr):
 	return 2595*np.log10(1 + fft_arr/700)
 
 def dct(mel_arr):
-	return scipy.fftpack.dct(mel_arr)
+	return scipy.fftpack.dct(mel_arr, n=12)
