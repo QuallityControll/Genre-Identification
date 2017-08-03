@@ -2,6 +2,8 @@ import numpy
 import scipy.fftpack
 import librosa
 import mygrad
+from mygrad.nnet.layers import dense
+from mygrad.nnet.losses import multiclass_hinge
 from microphone import record_audio
 import math
 
