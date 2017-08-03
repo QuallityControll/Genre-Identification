@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import scipy.fftpack
 import librosa
 import mygrad
@@ -91,6 +91,11 @@ def dct(mel_arr):
 	This does the dct of the
 	"""
 	return scipy.fftpack.dct(mel_arr, n=12)
+
+def to_MFCC(song_arr):
+    f = fft(song_arr)
+    a = dct(f)
+    return a
 
 def compute_accuracy(model_out, labels):
     """ Computes the mean accuracy, given predictions and true-labels.
