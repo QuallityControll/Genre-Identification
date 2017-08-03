@@ -139,3 +139,4 @@ def dense_NN(W, b, xtrain):
 	    
 	    loss.null_gradients()
 	return (W, b)
+	
