@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import scipy.fftpack
 import librosa
 import mygrad
@@ -90,6 +90,11 @@ def dct(mel_arr):
 	"""
 	return scipy.fftpack.dct(mel_arr, n=12)
 
+def to_MFCC(song_arr):
+    f = fft(song_arr)
+    a = dct(f)
+    return a
+
 def compute_accuracy(model_out, labels):
     """ Computes the mean accuracy, given predictions and true-labels.
         
@@ -139,4 +144,3 @@ def dense_NN(W, b, xtrain):
 	    
 	    loss.null_gradients()
 	return (W, b)
-	
