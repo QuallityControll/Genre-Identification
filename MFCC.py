@@ -2,15 +2,19 @@ import numpy as np
 import scipy.fftpack
 import librosa
 import mygrad
+import pickle
+import os
+from mygrad import Tensor
+from mygrad.math import log
 from mygrad.nnet.layers import dense
 from mygrad.nnet.losses import multiclass_hinge
+from mygrad.nnet.activations import softmax, relu
+import matplotlib.pyplot as plt
 from microphone import record_audio
-import pickle 
-import os
-
-__all__ = ["file_to_array", "mic_to_numpy_array", "fft", "get_freqs", "mel_scale", "dct", "compute_accuracy", "sgd", "dense_NN"]
 
 fs = 44100
+
+__all__ = ["file_to_array", "mic_to_numpy_array", "fft", "get_freqs", "mel_scale", "dct", "compute_accuracy", "sgd", "dense_NN", "to_MFCC", "he_normal", "cross_entropy"]
 
 # Need 250ms intervals. Since, 44100Hz = 44100 samples/s, (44100/4) cycles/(250ms). Need 44100/4 = 11025 samples.
 
@@ -56,11 +60,11 @@ def fft(song_arr):
 
 	:param
 		song_arr[np.array]:
-			This is the array that represents the song.
+			This is the array that represents the song. 
 
 	:return:
 		f[np.array]:
-			This is the array of coefficients of the fft.
+			This is the array of coefficients of the fft. 
 
 	"""
 
@@ -82,32 +86,27 @@ def mel_scale(fft_arr):
 
 	:return:
 		mels[np.array]:
-			This is an array that transformed the fft from Hertz into Mels.
+			This is an array that transformed the fft from Hertz into Mels. 
 
 	"""
 	return 2595*np.log10(1 + fft_arr/700)
 
 def dct(mel_arr):
 	"""
-	This does the dct of the mel_arr.
+	This does the dct of the 
 	"""
 	return scipy.fftpack.dct(mel_arr, n=12)
 
-def to_MFCC(song_arr):
-    f = fft(song_arr)
-    a = dct(f)
-    return a
-
 def compute_accuracy(model_out, labels):
     """ Computes the mean accuracy, given predictions and true-labels.
-
+        
         Parameters
         ----------
         model_out : numpy.ndarray, shape=(N, K)
             The predicted class-scores
         labels : numpy.ndarray, shape=(N, K)
             The one-hot encoded labels for the data.
-
+        
         Returns
         -------
         float
@@ -116,73 +115,73 @@ def compute_accuracy(model_out, labels):
 
 def sgd(param, rate):
     """ Performs a gradient-descent update on the parameter.
-
+    
         Parameters
         ----------
         param : mygrad.Tensor
             The parameter to be updated.
-
+        
         rate : float
             The step size used in the update"""
     param.data -= rate*param.grad
     return None
 
-def dense_NN(W, b, xtrain):
-	"""
-	Does a dense Neural Network on xtrain and updates W and b.
+def cross_entropy(p_pred, p_true):
+    """ Computes the mean cross-entropy.
+        
+        Parameters
+        ----------
+        p_pred : mygrad.Tensor, shape:(N, K)
+            N predicted distributions, each over K classes.
+        
+        p_true : mygrad.Tensor, shape:(N, K)
+            N 'true' distributions, each over K classes
+        
+        Returns
+        -------
+        mygrad.Tensor, shape=()
+            The mean cross entropy (scalar)."""
+    
+    N = p_pred.shape[0]
+    p_logq = (p_true) * log(p_pred)
+    return (-1/ N) * p_logq.sum()  
 
-	:Returns:
-		(W, b)(tuple of training parameters):
-			The W and b are the same as inputted but changed.
-	"""
-	for i in range(1000):
-	    o = dense(xtrain, W) + b
+def dense_NN(W, b, xtrain, ytrain):
+    """
+    Does a dense Neural Network on xtrain and updates W and b.
 
-	    loss = multiclass_hinge(o, y)
+    :Returns:
+        (W, b, acc)(tuple of training parameters):
+            The W and b are the same as inputted but changed. 
+    """
+    acc = []
+    for i in range(1000):
+        o = dense(xtrain, W) + b
+        
+        loss = multiclass_hinge(o, y)
+        
+        loss.backward()
+        
+        sgd(W, 0.1)
+        sgd(b, 0.1)
+        
+        loss.null_gradients()
+        acc.append(compute_accuracy(o.data, ytrain))
 
-	    loss.backward()
+    return (W, b, acc)
 
-	    sgd(W, 0.1)
-	    sgd(b, 0.1)
+def he_normal(shape):
+    """ Given the desired shape of your array, draws random
+        values from a scaled-Gaussian distribution.
+        
+        Returns
+        -------
+        numpy.ndarray"""
+    N = shape[0]
+    scale = 1 / np.sqrt(2*N)
+    return np.random.randn(*shape)*scale
 
-	    loss.null_gradients()
-	return (W, b)
-
-original_path = r"C:\Users\manusree\PycharmProjects\Alexa Skills\Genre-Identification\SongTraining"
-changed_path = r"C:\Users\manusree\PycharmProjects\Alexa Skills\Genre-Identification\SongTraining"
-a = os.listdir(r"C:\Users\manusree\PycharmProjects\Alexa Skills\Genre-Identification\SongTraining")
-ytrain = []
-MFCCs = []
-interval_time = 10
-for genre in a:
-    changed_path1 = original_path + "\\" + genre
-    changed_path2 = original_path + "\\" + genre
-    x = os.listdir(changed_path1)
-    for i in range(len(x)):
-        changed_path2 = changed_path1 + "\\" + x[i]
-        song_arr = file_to_array(changed_path2)
-        for k in range(0, int(len(song_arr)/fs)):
-            interval = song_arr[k*fs*interval_time:(k+1)*fs*interval_time]
-            if interval != np.array([]):
-                b = to_MFCC(interval)
-                MFCCs.append(b)
-                del b
-                del interval
-                if genre == "Classical":
-                    ytrain.append([1,0,0,0,0])
-                elif genre == "Jazz":
-                    ytrain.append([0,1,0,0,0])
-                elif genre == "Pop":
-                    ytrain.append([0,0,1,0,0])
-                elif genre == "Rap":
-                    ytrain.append([0,0,0,1,0])
-                elif genre == "Rock":
-                    ytrain.append([0,0,0,0,1])
-        del song_arr
-MFCCs = np.array(MFCCs)
-ytrain = np.array(ytrain)
-y = np.where(ytrain == 1)[1]
-a = Tensor(np.random.randn(12, 5))
-c = Tensor(np.zeros((5,), dtype=a.dtype))
-W, b, acc = dense_NN(a, c, MFCCs, ytrain)
-print(acc[-1])
+def to_MFCC(song_arr):
+    f = fft(song_arr)
+    a = dct(f)
+    return np.abs(a)
