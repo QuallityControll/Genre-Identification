@@ -6,6 +6,7 @@ from mygrad.math import log
 from mygrad.nnet.layers import dense
 from mygrad.nnet.losses import multiclass_hinge
 from mygrad.nnet.activations import softmax, relu
+from MFCC.py import *
 
 original_path = r"C:\Users\manusree\PycharmProjects\Alexa Skills\Genre-Identification\SongTraining"
 changed_path = r"C:\Users\manusree\PycharmProjects\Alexa Skills\Genre-Identification\SongTraining"
